@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Planner | Student Smart Hub</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f6fc;color:#172554;font-family:Segoe UI,Arial,sans-serif}
+nav{background:white;padding:19px 6%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 15px #18264b0c}
+nav strong{font-size:21px}
+nav a,.btn{background:#4f46e5;color:white;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:600;border:0;cursor:pointer}
+main{max-width:1100px;margin:42px auto;padding:0 22px}
+h1{font-size:32px;margin-bottom:7px}
+.sub{color:#718096;margin-bottom:28px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:25px 0}
+.stat,.task,.formbox{background:white;border-radius:17px;padding:22px;box-shadow:0 8px 25px #1725540b}
+.stat small{color:#718096;font-weight:700}
+.stat h2{font-size:29px;margin:10px 0 0}
+.task{margin:14px 0;display:flex;justify-content:space-between;gap:18px;align-items:center}
+.task h3{margin:0 0 8px}
+.meta{color:#718096;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.actions a,.actions button{border:0;padding:9px 12px;border-radius:8px;text-decoration:none;cursor:pointer;font-weight:600;background:#eef2ff;color:#4338ca}
+.actions .delete{background:#fee2e2;color:#b91c1c}
+.actions .done{background:#dcfce7;color:#15803d}
+.badge{font-size:12px;padding:5px 9px;border-radius:20px;background:#fef3c7;color:#92400e}
+.messages{background:#dcfce7;color:#166534;padding:12px;border-radius:10px}
+.empty{text-align:center;padding:55px;color:#718096}
+.formbox{max-width:650px;margin:25px auto}
+form p{display:flex;flex-direction:column;gap:7px;margin:18px 0}
+input,textarea,select{padding:12px;border:1px solid #dbe1ef;border-radius:9px;font:inherit;width:100%}
+label{font-weight:600}
+.streak-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0 28px}
+.streak-card{background:white;border-radius:17px;padding:22px;box-shadow:0 8px 25px #1725540b}
+.streak-card small{color:#718096;font-weight:700}
+.streak-card h2{font-size:29px;margin:10px 0}
+.streak-card p{color:#718096;margin-bottom:0}
+.checkin-box{background:#eef2ff;border-radius:15px;padding:20px;margin:18px 0 30px}
+.checkin-box button{background:#4f46e5;color:white;border:0;padding:11px 18px;border-radius:10px;font-weight:600;cursor:pointer}
+.checkin-box button:disabled{background:#16a34a;cursor:default}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}.task{align-items:flex-start;flex-direction:column}.streak-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+<strong>✦ Student Smart Hub</strong>
+<a href="/dashboard/">Dashboard</a>
+</nav>
+<main>
+<h1>My Study Planner 📚</h1>
+<p class="sub">Plan your learning, manage deadlines and achieve your goals.</p>
+
+{% if messages %}
+{% for message in messages %}<p class="messages">{{ message }}</p>{% endfor %}
+{% endif %}
+
+<div class="stats">
+<div class="stat"><small>TOTAL TASKS</small><h2>{{ total }}</h2></div>
+<div class="stat"><small>COMPLETED</small><h2>{{ completed_count }}</h2></div>
+<div class="stat"><small>PENDING</small><h2>{{ pending_count }}</h2></div>
+<div class="stat"><small>OVERDUE</small><h2>{{ overdue_count }}</h2></div>
+</div>
+
+<div class="streak-grid">
+    <div class="streak-card">
+        <small>🔥 CURRENT STREAK</small>
+        <h2>{{ current_streak }} Days</h2>
+        <p>Your ongoing study streak</p>
+    </div>
+
+    <div class="streak-card">
+        <small>🏆 LONGEST STREAK</small>
+        <h2>{{ longest_streak }} Days</h2>
+        <p>Your personal best</p>
+    </div>
+
+    <div class="streak-card">
+        <small>📅 TODAY'S STATUS</small>
+        <h2>{% if today_done %}Completed{% else %}Not Yet{% endif %}</h2>
+        <p>{% if today_done %}Today's study activity recorded!{% else %}Record your study activity today{% endif %}</p>
+    </div>
+</div>
+
+<div class="checkin-box">
+    <h3>🔥 Daily Study Check-in</h3>
+    <p>Studied today? Record your daily activity and maintain your streak.</p>
+
+    <form method="post" action="{% url 'planner:checkin' %}">
+        {% csrf_token %}
+        <button type="submit" {% if today_done %}disabled{% endif %}>
+            {% if today_done %}✓ Already Checked In{% else %}I Studied Today{% endif %}
+        </button>
+    </form>
+</div>
+<p><a class="btn" href="{% url 'planner:add' %}">+ Add New Study Task</a> <a class="btn" href="{% url 'planner:goals' %}">🎯 Study Goals</a></p>
+
+<h2>Your Tasks</h2>
+{% for task in tasks %}
+<div class="task">
+<div>
+<h3>{% if task.completed %}<s>{{ task.title }}</s>{% else %}{{ task.title }}{% endif %}</h3>
+<div class="meta">{{ task.subject }} · Due: {{ task.due_date }} · Priority: {{ task.priority }}</div>
+{% if task.description %}<p>{{ task.description }}</p>{% endif %}
+{% if task.completed %}<span class="badge" style="background:#dcfce7;color:#166534">Completed</span>
+{% elif task.due_date < today %}<span class="badge" style="background:#fee2e2;color:#b91c1c">Overdue</span>{% endif %}
+</div>
+<div class="actions">
+<form method="post" action="{% url 'planner:toggle' task.pk %}">{% csrf_token %}
+<button class="done" type="submit">{% if task.completed %}Undo{% else %}Complete{% endif %}</button>
+</form>
+<a href="{% url 'planner:edit' task.pk %}">Edit</a>
+<form method="post" action="{% url 'planner:delete' task.pk %}" onsubmit="return confirm('Delete this task?')">{% csrf_token %}
+<button class="delete" type="submit">Delete</button>
+</form>
+</div>
+</div>
+{% empty %}
+<div class="stat empty">No study tasks yet. Click "Add New Study Task" to get started!</div>
+{% endfor %}
+</main>
+</body>
+</html>
+
+
+

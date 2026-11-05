@@ -1,0 +1,113 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PYQ Analytics | Student Smart Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark px-4">
+    <a class="navbar-brand" href="/dashboard/">Student Smart Hub</a>
+    <a href="{% url 'pyq:list' %}" class="btn btn-outline-light btn-sm">Back to PYQs</a>
+</nav>
+
+<div class="container py-5">
+
+    <h2 class="mb-2">PYQ Performance Analytics</h2>
+    <p class="text-muted mb-4">Understand your previous year question trends.</p>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total Questions</h6>
+                    <h2 class="text-primary">{{ total_questions }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Important Questions</h6>
+                    <h2 class="text-success">{{ important_questions }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Repeated Questions</h6>
+                    <h2 class="text-danger">{{ repeated_count }}</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">Subject-wise Questions</h5>
+
+                    {% for item in subject_stats %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ item.subject }}</span>
+                                <strong>{{ item.total }}</strong>
+                            </div>
+
+                            <div class="progress">
+                                <div class="progress-bar bg-primary"
+                                     role="progressbar"
+                                     style="width: {% widthratio item.total total_questions 100 %}%">
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No subject data available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h5 class="mb-3">Year-wise Questions</h5>
+
+                    {% for item in year_stats %}
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span>{{ item.year }}</span>
+                            <strong>{{ item.total }} Questions</strong>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No year data available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'pyq:repeated' %}" class="btn btn-outline-danger">
+            View Repeated Questions
+        </a>
+
+        <a href="{% url 'pyq:upload' %}" class="btn btn-outline-primary">
+            Upload PYQ Paper
+        </a>
+    </div>
+
+</div>
+
+</body>
+</html>

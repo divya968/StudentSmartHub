@@ -1,0 +1,59 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register | Student Smart Hub</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="auth-layout">
+    <section class="auth-intro">
+        <div class="brand"><span class="brand-icon">S</span> Student Smart Hub</div>
+        <div class="intro-content">
+            <span class="eyebrow">YOUR ACADEMIC COMPANION</span>
+            <h1>Make your<br>student life<br><span>smarter.</span></h1>
+            <p>Organize your learning and achieve your academic goals.</p>
+        </div>
+        <div class="intro-footer">Learn better. Plan smarter. Achieve more.</div>
+    </section>
+
+    <main class="auth-main">
+        <div class="auth-card">
+            <span class="eyebrow">GET STARTED</span>
+            <h2>Create your account</h2>
+            <p class="subtext">Join Student Smart Hub today.</p>
+
+            <form method="POST">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-error">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="form-grid">
+                    {% for field in form %}
+                        <div class="field-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}
+                                <small class="form-error">{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <button class="primary-btn" type="submit">
+                    Create Account <span>→</span>
+                </button>
+            </form>
+
+            <p class="switch-link">
+                Already registered?
+                <a href="{% url 'login' %}">Sign in</a>
+            </p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

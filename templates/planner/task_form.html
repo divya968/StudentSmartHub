@@ -1,0 +1,35 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ heading }} | Student Smart Hub</title>
+<style>
+body{margin:0;background:#f4f6fc;color:#172554;font-family:Segoe UI,Arial,sans-serif}
+nav{background:white;padding:20px 6%;font-size:21px;font-weight:700}
+main{max-width:700px;margin:45px auto;padding:0 20px}
+.card{background:white;padding:32px;border-radius:18px;box-shadow:0 10px 35px #17255412}
+p{display:flex;flex-direction:column;gap:8px;margin:20px 0}
+label{font-weight:600}
+input,textarea,select{padding:12px;border:1px solid #dbe1ef;border-radius:9px;font:inherit}
+button{background:#4f46e5;color:white;border:0;padding:13px 20px;border-radius:9px;cursor:pointer;font-weight:700}
+a{color:#4f46e5;text-decoration:none;margin-left:15px}
+.errorlist{color:#b91c1c}
+</style>
+</head>
+<body>
+<nav>✦ Student Smart Hub</nav>
+<main>
+<div class="card">
+<h1>{{ heading }}</h1>
+<p>Organize your learning one task at a time.</p>
+<form method="post">
+{% csrf_token %}
+{{ form.as_p }}
+<button type="submit">Save Task</button>
+<a href="{% url 'planner:list' %}">Cancel</a>
+</form>
+</div>
+</main>
+</body>
+</html>

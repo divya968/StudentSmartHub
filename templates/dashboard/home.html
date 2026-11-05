@@ -1,0 +1,144 @@
+﻿
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | Student Smart Hub</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="dashboard-body">
+
+    <header class="topbar">
+        <div class="brand dark-brand">
+            <span class="brand-icon">S</span> Student Smart Hub
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;">
+            <a href="{% url 'profile' %}" class="logout-btn"
+               style="text-decoration:none;color:#17213b;">
+                My Profile
+            </a>
+
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="logout-btn" type="submit">Log out</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+
+        <span class="eyebrow">STUDENT WORKSPACE</span>
+        <h1>Hello, {{ request.user.first_name|default:request.user.username }}!</h1>
+        <p class="subtext">Welcome to your academic dashboard.</p>
+
+        <section class="welcome-card">
+            <div>
+                <span class="eyebrow">YOUR ACADEMIC JOURNEY</span>
+                <h2>Learn better. Achieve more.</h2>
+                <p>Your personal learning workspace is ready.</p>
+            </div>
+            <div class="welcome-symbol">✦</div>
+        </section>
+
+        <div class="stats-grid">
+            <article class="stat-card">
+                <span>COURSE</span>
+                <h3>{{ profile.course|default:"Not added" }}</h3>
+            </article>
+
+            <article class="stat-card">
+                <span>SEMESTER</span>
+                <h3>{{ profile.get_semester_display|default:"Not added" }}</h3>
+            </article>
+
+            <article class="stat-card">
+                <span>ACCOUNT</span>
+                <h3>Active</h3>
+            </article>
+        </div>
+
+        <h2 class="section-heading">Quick Statistics</h2>
+
+        <div class="stats-grid">
+            <article class="stat-card">
+                <span>TOTAL NOTES</span>
+                <h3>{{ total_notes }}</h3>
+            </article>
+
+            <article class="stat-card">
+                <span>TOTAL STUDY TASKS</span>
+                <h3>{{ total_tasks }}</h3>
+            </article>
+
+            <article class="stat-card">
+                <span>COMPLETED TASKS</span>
+                <h3>{{ completed_tasks }}</h3>
+            </article>
+
+            <article class="stat-card">
+                <span>TOTAL PYQ QUESTIONS</span>
+                <h3>{{ total_pyqs }}</h3>
+            </article>
+        </div>
+
+        <h2 class="section-heading">Study Progress</h2>
+
+        <section class="stat-card progress-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                <div>
+                    <h3>Task Completion</h3>
+                    <p class="subtext">
+                        {{ completed_tasks }} completed out of {{ total_tasks }} tasks
+                    </p>
+                </div>
+
+                <h2 style="color:#4358b9;">{{ progress_percentage }}%</h2>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     style="width:{{ progress_percentage }}%;"></div>
+            </div>
+
+            <p style="margin-top:15px;color:#81899b;font-size:13px;">
+                {{ pending_tasks }} tasks remaining
+            </p>
+        </section>
+
+        <h2 class="section-heading">Your workspace</h2>
+
+        <div class="module-grid">
+
+            <a href="{% url 'study_notes:list' %}" class="module-card">
+                <h3>My Notes</h3>
+                <p>Organize study material.</p>
+            </a>
+
+            <a href="{% url 'planner:list' %}" class="module-card">
+                <h3>Study Planner</h3>
+                <p>Manage your study tasks.</p>
+            </a>
+
+            <a href="{% url 'planner:goals' %}" class="module-card">
+                <h3>Study Goals 🎯</h3>
+                <p>Track daily study hours and completed tasks.</p>
+            </a>
+
+            <a href="{% url 'pyq:analytics' %}" class="module-card">
+                <h3>PYQ Analytics</h3>
+                <p>View subject-wise and year-wise performance.</p>
+            </a>
+
+            <a href="{% url 'pyq:upload' %}" class="module-card">
+                <h3>Upload PYQ</h3>
+                <p>Upload previous-year question papers.</p>
+            </a>
+
+        </div>
+
+    </main>
+</body>
+</html>

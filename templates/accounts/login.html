@@ -1,0 +1,65 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login | Student Smart Hub</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+<div class="auth-layout">
+    <section class="auth-intro">
+        <div class="brand">
+            <span class="brand-icon">S</span> Student Smart Hub
+        </div>
+        <div class="intro-content">
+            <span class="eyebrow">WELCOME BACK</span>
+            <h1>Your goals.<br>Your progress.<br><span>Your future.</span></h1>
+            <p>Your personal academic workspace is waiting for you.</p>
+        </div>
+        <div class="intro-footer">Learn better. Plan smarter. Achieve more.</div>
+    </section>
+
+    <main class="auth-main">
+        <div class="auth-card login-card">
+            <span class="eyebrow">STUDENT WORKSPACE</span>
+            <h2>Welcome back!</h2>
+            <p class="subtext">Sign in to continue your learning journey.</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+
+                <div class="field-group">
+                    <label for="{{ form.username.id_for_label }}">Username</label>
+                    {{ form.username }}
+                    {{ form.username.errors }}
+                </div>
+
+                <div class="field-group">
+                    <label for="{{ form.password.id_for_label }}">Password</label>
+                    {{ form.password }}
+                    {{ form.password.errors }}
+                </div>
+
+                <button class="primary-btn" type="submit">
+                    Sign In <span>→</span>
+                </button>
+            </form>
+
+            <p class="switch-link">
+                New student?
+                <a href="{% url 'register' %}">Create account</a>
+            </p>
+        </div>
+    </main>
+</div>
+</body>
+</html>

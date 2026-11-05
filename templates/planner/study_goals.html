@@ -1,0 +1,74 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Goals | Student Smart Hub</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f6fc;color:#172554;font-family:Segoe UI,Arial,sans-serif}
+nav{background:white;padding:19px 6%;display:flex;justify-content:space-between;align-items:center;box-shadow:0 3px 15px #18264b0c}
+nav strong{font-size:21px}
+nav a{background:#4f46e5;color:white;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:600}
+main{max-width:1000px;margin:40px auto;padding:0 22px}
+h1{font-size:32px}
+.sub{color:#718096;margin-bottom:28px}
+.card{background:white;border-radius:17px;padding:24px;margin:20px 0;box-shadow:0 8px 25px #1725540b}
+form p{display:flex;flex-direction:column;gap:8px;margin:18px 0}
+label{font-weight:600}
+input{padding:12px;border:1px solid #dbe1ef;border-radius:9px;font:inherit;width:100%}
+button{background:#4f46e5;color:white;border:0;padding:12px 20px;border-radius:10px;font-weight:600;cursor:pointer}
+.progress{height:14px;background:#edf0fa;border-radius:20px;overflow:hidden;margin:12px 0}
+.fill{height:100%;background:linear-gradient(90deg,#4358b9,#7560dc);border-radius:20px}
+.message{background:#dcfce7;color:#166534;padding:12px;border-radius:10px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+small{color:#718096;font-weight:700}
+@media(max-width:650px){.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+<strong>✦ Student Smart Hub</strong>
+<a href="{% url 'planner:list' %}">Back to Planner</a>
+</nav>
+<main>
+<h1>🎯 My Daily Study Goals</h1>
+<p class="sub">Set your daily targets, track your progress and stay consistent.</p>
+
+{% if messages %}
+{% for message in messages %}
+<p class="message">{{ message }}</p>
+{% endfor %}
+{% endif %}
+
+<div class="card">
+<h2>Set Your Daily Targets</h2>
+<form method="post">
+{% csrf_token %}
+{{ form.as_p }}
+<button type="submit">Save Daily Goals</button>
+</form>
+</div>
+
+<div class="stats">
+<div class="card">
+<small>📚 STUDY HOURS PROGRESS</small>
+<h2>{{ goal.studied_hours }} / {{ goal.target_hours }} Hours</h2>
+<div class="progress">
+<div class="fill" style="width:{{ hours_percentage }}%"></div>
+</div>
+<p>{{ hours_percentage }}% completed</p>
+</div>
+
+<div class="card">
+<small>✅ COMPLETED TASKS</small>
+<h2>{{ completed_today }} / {{ goal.target_tasks }} Tasks</h2>
+<div class="progress">
+<div class="fill" style="width:{{ tasks_percentage }}%"></div>
+</div>
+<p>{{ tasks_percentage }}% completed</p>
+</div>
+</div>
+</main>
+</body>
+</html>
