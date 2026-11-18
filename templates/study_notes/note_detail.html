@@ -1,0 +1,39 @@
+{% extends "hub/base.html" %}
+{% load hub_extras %}
+{% block title %}{{ note.title }}{% endblock %}
+{% block content %}
+<div class="page-head head-actions-wrap">
+    <div>
+        <h1>{% if note.is_pinned %}📌 {% endif %}{{ note.title }}</h1>
+        <p><span class="tag">{{ note.subject }}</span>{% for t in note.tag_list %}<a class="tag" href="{% url 'study_notes:list' %}?tag={{ t|urlencode }}">#{{ t }}</a>{% endfor %} · Updated {{ note.updated_at|date:"d M Y" }}</p>
+    </div>
+    <div class="head-actions no-print">
+        <a class="btn-soft" href="{% url 'study_notes:edit' note.pk %}">✏️ Edit</a>
+        <a class="btn-soft" href="{% url 'study_notes:export' note.pk 'pdf' %}">⬇ PDF</a>
+        <a class="btn-soft" href="{% url 'study_notes:export' note.pk 'md' %}">⬇ Markdown</a>
+        <button class="btn-ghost" onclick="window.print()">🖨 Print</button>
+        <form class="inline" method="post" action="{% url 'hub:flashcards_from_note' note.pk %}">{% csrf_token %}<button class="btn-grad" type="submit">🃏 Make flashcards</button></form>
+    </div>
+</div>
+<section class="panel">
+    <div class="md-body">{{ note.content|markdown_lite }}</div>
+    {% if note.attachment %}<hr style="border-color:var(--border)"><p><b>📎 Attachment:</b> <a href="{{ note.attachment.url }}" target="_blank" rel="noopener">{{ note.attachment.name }}</a></p>{% endif %}
+</section>
+<section class="panel no-print">
+    <h3>🤖 Quick AI summary</h3>
+    <button class="btn-soft" id="sumBtn">✨ Summarise this note</button>
+    <div id="sumOut" class="ai-out" style="display:none"></div>
+</section>
+<a class="btn-ghost no-print" href="{% url 'study_notes:list' %}">← All notes</a>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById("sumBtn").addEventListener("click", function () {
+    var b = this; b.disabled = true; b.textContent = "Working…";
+    SSH.post("{% url 'hub:ai_summary' %}", { note_id: {{ note.pk }} }).then(function (r) {
+        b.disabled = false; b.textContent = "✨ Summarise this note";
+        var o = document.getElementById("sumOut"); o.style.display = "block"; o.textContent = r._ok ? r.text : (r.error || "Failed");
+    });
+});
+</script>
+{% endblock %}

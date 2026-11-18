@@ -1,0 +1,341 @@
+
+{% extends "hub/base.html" %}
+{% block title %}Study Flashcards{% endblock %}
+
+{% block content %}
+<style>
+/* ===== STUDY MODE FLASHCARD FIX ===== */
+
+#stage.flash-study .study-stage {
+    width: min(100%, 680px) !important;
+    height: clamp(340px, 52vh, 440px) !important;
+    min-height: 340px !important;
+    margin: 18px auto !important;
+    perspective: 1200px !important;
+    -webkit-perspective: 1200px !important;
+}
+
+#stage.flash-study .study-stage .flip {
+    position: relative !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    transform-style: preserve-3d !important;
+    -webkit-transform-style: preserve-3d !important;
+    transition: transform .6s cubic-bezier(.2, .8, .2, 1) !important;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face {
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    box-sizing: border-box !important;
+    padding: clamp(18px, 3vw, 30px) !important;
+    overflow: hidden !important;
+    border-radius: 26px !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face .flash-face-label {
+    position: static !important;
+    display: block !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    margin: 0 !important;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face .flash-face-text {
+    position: static !important;
+    display: block !important;
+    flex: 1 1 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 4px 8px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+    text-align: center !important;
+    font-size: clamp(16px, 1.45vw, 19px) !important;
+    line-height: 1.45 !important;
+}
+
+#stage.flash-study .study-stage .flip > .front {
+    transform: rotateY(0deg) !important;
+}
+
+#stage.flash-study .study-stage .flip > .back {
+    transform: rotateY(180deg) !important;
+}
+
+#stage.flash-study .study-stage .flip.flipped {
+    transform: rotateY(180deg) !important;
+}
+
+/* Mobile layout */
+@media (max-width: 640px) {
+    #stage.flash-study .study-stage {
+        height: clamp(320px, 55vh, 400px) !important;
+        min-height: 320px !important;
+        margin: 10px auto !important;
+    }
+
+    #stage.flash-study .study-stage .flip > .flash-face {
+        padding: 18px 16px !important;
+        border-radius: 20px !important;
+    }
+
+    #stage.flash-study .study-stage .flip > .flash-face .flash-face-text {
+        font-size: 15px !important;
+        line-height: 1.4 !important;
+    }
+}
+</style>
+
+<div class="page-head">
+    <div>
+        <h1>🃏 Study Mode</h1>
+        <p>Tap the card to flip it. Be honest — it helps you learn!</p>
+    </div>
+
+    <div class="head-actions">
+        <a class="btn-ghost" href="{% url 'hub:flashcards' %}">
+            ← Back to deck
+        </a>
+    </div>
+</div>
+
+<div id="stage" class="flash-study">
+
+    <div class="flash-study-meta">
+        <span id="counter"></span>
+    </div>
+
+    <div class="progress-track flash-study-progress">
+        <div class="progress-fill" id="bar" style="width:0%"></div>
+    </div>
+
+    <div class="study-stage">
+
+        <div class="flip" id="flip"
+             role="button"
+             tabindex="0"
+             aria-label="Flashcard. Activate to flip between question and answer">
+
+            <div class="front flash-face">
+                <small id="subj" class="flash-face-label"></small>
+                <span id="q" class="flash-face-text"></span>
+            </div>
+
+            <div class="back flash-face">
+                <small class="flash-face-label">ANSWER</small>
+                <span id="a" class="flash-face-text"></span>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="study-actions">
+        <button type="button" class="btn-danger-soft" id="no">
+            ✗ Still learning
+        </button>
+
+        <button type="button" class="btn-soft" id="flipBtn">
+            ↻ Flip
+        </button>
+
+        <button type="button" class="btn-grad" id="yes">
+            ✓ I knew it
+        </button>
+    </div>
+
+    <p class="flash-study-hint">
+        Tip: Press Space to flip · ← Still learning · → I knew it
+    </p>
+
+</div>
+
+<div id="done" class="panel flash-study-done" style="display:none">
+    <h2>🎉 Deck finished!</h2>
+
+    <p id="summary" class="text-muted"></p>
+
+    <a class="btn-grad" href="{% url 'hub:flashcard_study' %}">
+        Study again
+    </a>
+
+    <a class="btn-soft" href="{% url 'hub:flashcards' %}">
+        Back to deck
+    </a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{{ deck|json_script:"deckData" }}
+
+<script>
+(function () {
+
+    var deck = JSON.parse(
+        document.getElementById("deckData").textContent
+    );
+
+    var i = 0;
+    var known = 0;
+
+    var flip = document.getElementById("flip");
+
+    if (!deck.length) {
+        document.getElementById("stage").innerHTML =
+            '<div class="panel"><p class="text-muted" style="margin:0">No cards to study. <a href="{% url "hub:flashcards" %}">Add some →</a></p></div>';
+        return;
+    }
+
+    function toggleFlip() {
+        flip.classList.toggle("flipped");
+    }
+
+    function show() {
+
+        if (i >= deck.length) {
+
+            document.getElementById("stage").style.display = "none";
+
+            var done = document.getElementById("done");
+            done.style.display = "block";
+
+            document.getElementById("summary").textContent =
+                "You knew " + known + " of " + deck.length + " cards.";
+
+            if (known === deck.length && window.SSH && SSH.confetti) {
+                SSH.confetti();
+            }
+
+            return;
+        }
+
+        flip.classList.remove("flipped");
+
+        var card = deck[i];
+
+        document.getElementById("q").textContent = card.q;
+        document.getElementById("a").textContent = card.a;
+
+        document.getElementById("subj").textContent =
+            (card.subject || "QUESTION").toUpperCase();
+
+        document.getElementById("counter").textContent =
+            "Card " + (i + 1) + " / " + deck.length;
+
+        document.getElementById("bar").style.width =
+            (i * 100 / deck.length) + "%";
+    }
+
+    function answer(isKnown) {
+
+        if (i >= deck.length) return;
+
+        if (isKnown) known++;
+
+        if (window.SSH && SSH.post) {
+
+            SSH.post(
+                "{% url 'hub:flashcard_mark' 0 %}".replace(
+                    "/0/",
+                    "/" + deck[i].id + "/"
+                ),
+                { known: isKnown }
+            );
+        }
+
+        i++;
+        show();
+    }
+
+    flip.addEventListener("click", toggleFlip);
+
+    flip.addEventListener("keydown", function (event) {
+
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleFlip();
+        }
+
+    });
+
+    document.getElementById("flipBtn").addEventListener(
+        "click",
+        toggleFlip
+    );
+
+    document.getElementById("yes").addEventListener(
+        "click",
+        function () {
+            answer(true);
+        }
+    );
+
+    document.getElementById("no").addEventListener(
+        "click",
+        function () {
+            answer(false);
+        }
+    );
+
+    document.addEventListener("keydown", function (event) {
+
+        var target = event.target;
+
+        if (
+            target &&
+            (
+                target.isContentEditable ||
+                /INPUT|TEXTAREA|SELECT|BUTTON/.test(target.tagName)
+            )
+        ) {
+            return;
+        }
+
+        if (event.code === "Space") {
+            event.preventDefault();
+            toggleFlip();
+        }
+
+        if (event.key === "ArrowRight") {
+            answer(true);
+        }
+
+        if (event.key === "ArrowLeft") {
+            answer(false);
+        }
+
+    });
+
+    show();
+
+})();
+</script>
+
+{% endblock %}

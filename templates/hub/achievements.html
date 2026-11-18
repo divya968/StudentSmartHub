@@ -1,0 +1,50 @@
+{% extends "hub/base.html" %}
+{% block title %}Achievements{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>🏆 Achievements</h1><p>Earn XP by studying — level up, unlock badges and climb the leaderboard.</p></div></div>
+
+<div class="g-2-1">
+    <section class="level-card">
+        <small style="opacity:.85;font-weight:800;letter-spacing:1px">LEVEL {{ info.level }}</small>
+        <h2 style="font-size:34px">{{ info.title }}</h2>
+        <div class="xp-bar"><i style="width:{{ info.pct }}%"></i></div>
+        <p style="margin:10px 0 0;opacity:.92">{{ info.xp }} XP · {{ info.to_next }} XP to Level {{ info.level|add:1 }}</p>
+        <div class="g3" style="margin-top:18px;gap:12px">
+            <div><small style="opacity:.8">TASKS DONE</small><h2 style="margin:2px 0">{{ stats.tasks }}</h2></div>
+            <div><small style="opacity:.8">FOCUS MIN</small><h2 style="margin:2px 0">{{ stats.minutes }}</h2></div>
+            <div><small style="opacity:.8">CHAPTERS</small><h2 style="margin:2px 0">{{ stats.chapters }}</h2></div>
+        </div>
+    </section>
+    <section class="panel">
+        <h3>🧊 Streak Freeze</h3>
+        <p style="margin:0 0 6px"><b>{{ freeze.available }}</b> available <small class="text-muted">({{ freeze.used }} used · +1 every 3 levels)</small></p>
+        <p class="text-muted" style="font-size:13px">Missed yesterday? A freeze fills in yesterday so your <b>{{ streaks.current_streak }}-day streak</b> survives.</p>
+        <form method="post" action="{% url 'hub:freeze' %}">{% csrf_token %}<button class="btn-grad btn-sm" {% if not freeze.available %}disabled{% endif %}>Use a freeze for yesterday</button></form>
+    </section>
+</div>
+
+<section class="panel">
+    <h3>🎖️ Badges <small>{{ badges|length }} total</small></h3>
+    <div class="badge-grid">
+        {% for b in badges %}<div class="badge-tile {% if not b.earned %}locked{% endif %}"><span class="b-ico">{{ b.icon }}</span><b>{{ b.name }}</b><small class="text-muted">{{ b.desc }}</small></div>{% endfor %}
+    </div>
+</section>
+
+<div class="g2">
+    <section class="panel">
+        <h3>👑 Leaderboard</h3>
+        {% for r in board %}
+            <div class="lb-row {% if r.user == request.user %}me{% endif %}">
+                <span class="lb-rank">{% if r.rank == 1 %}🥇{% elif r.rank == 2 %}🥈{% elif r.rank == 3 %}🥉{% else %}{{ r.rank }}{% endif %}</span>
+                <span class="avatar" style="width:34px;height:34px;font-size:14px">{{ r.name|slice:":1"|upper }}</span>
+                <span class="grow"><b>{{ r.name }}</b>{% if r.user == request.user %} <small class="text-muted">(you)</small>{% endif %}<br><small class="text-muted">Level {{ r.level }}</small></span>
+                <b>{{ r.xp }} XP</b>
+            </div>
+        {% empty %}<p class="text-muted" style="margin:0">Complete a task to appear on the board!</p>{% endfor %}
+    </section>
+    <section class="panel">
+        <h3>⚡ How to earn XP</h3>
+        <ul class="mini-list">{% for label, xp in xp_rules %}<li><span>{{ label }}</span><b>+{{ xp }} XP</b></li>{% endfor %}</ul>
+    </section>
+</div>
+{% endblock %}

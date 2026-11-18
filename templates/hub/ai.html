@@ -1,0 +1,161 @@
+{% extends "hub/base.html" %}
+{% block title %}AI Assistant{% endblock %}
+{% block content %}
+<div class="ai-hero">
+    <div class="ai-hero-copy">
+        <div class="ai-eyebrow">YOUR PERSONAL LEARNING COPILOT</div>
+        <h1>🤖 AI Study Assistant</h1>
+        <p>Turn your notes into revision sheets, practice quizzes and a smarter exam plan — completely free.</p>
+    </div>
+    <div class="ai-hero-art" aria-hidden="true"><span>✦</span><strong>AI</strong><i>✧</i></div>
+</div>
+<div class="ai-feature-strip">
+    <div><b>📝 Understand </b><span> Clean, structured summaries</span></div>
+    <div><b>🧠 Practice </b><span> Quick knowledge checks</span></div>
+    <div><b>🎯 Prepare </b><span> Prioritise recurring topics</span></div>
+    <div><b>💬 Ask </b><span> Find answers in your saved notes</span></div>
+</div>
+
+
+<div class="tabs ai-tabs" id="tabs">
+    <button class="tab-btn active" data-tab="summary"> 📝 Summarise </button>
+    <button class="tab-btn" data-tab="quiz">🧠 Quiz me</button>
+    <button class="tab-btn" data-tab="predict">🔮 Exam predictor</button>
+    <button class="tab-btn" data-tab="chat">💬 Study tutor</button>
+</div>
+
+<!-- Summary -->
+<section class="panel tab-pane active ai-panel" id="tab-summary">
+    <h3>📝 Turn your notes into a revision sheet</h3><p class="ai-section-hint">Choose one of your saved notes or paste material. The summary keeps important definitions and examples together.</p>
+    <div class="field"><select id="sumNote"><option value="">— paste text instead —</option>{% for n in notes %}<option value="{{ n.pk }}">{{ n.title }} ({{ n.subject }})</option>{% endfor %}</select></div>
+    <div class="field" style="margin-top:12px"><textarea id="sumText" rows="6" placeholder="Paste any text you want summarised…"></textarea></div>
+    <button class="btn-grad" id="sumBtn" style="margin-top:14px">✨ Summarise</button>
+    <div id="sumOut" class="ai-out ai-result" style="display:none" aria-live="polite"></div>
+</section>
+
+<!-- Quiz -->
+<section class="panel tab-pane ai-panel" id="tab-quiz">
+    <h3>🧠 Test what you remember</h3><p class="ai-section-hint">Generate multiple-choice questions from your own study material and get instant explanations.</p>
+    <div class="g2" style="gap:12px">
+        <div class="field"><select id="quizNote"><option value="">— paste text instead —</option>{% for n in notes %}<option value="{{ n.pk }}">{{ n.title }} ({{ n.subject }})</option>{% endfor %}</select></div>
+        <div class="field"><select id="quizN"><option>3</option><option selected>5</option><option>8</option><option>10</option></select></div>
+    </div>
+    <div class="field" style="margin-top:12px"><textarea id="quizText" rows="5" placeholder="Or paste study material (20+ words)…"></textarea></div>
+    <button class="btn-grad" id="quizBtn" style="margin-top:14px">🎲 Create quiz</button>
+    <div id="quizOut" style="display:none"></div>
+</section>
+
+<!-- Predictor -->
+<section class="panel tab-pane ai-panel" id="tab-predict">
+    <h3>🔮 Which topics are most likely in the next exam?</h3>
+    <p class="text-muted">Calculated from how often each topic appeared in your PYQ database, how recently, and its marks. It's a smart guide, not a guarantee.</p>
+    <div class="field" style="max-width:340px"><select id="predSubject"><option value="">All subjects</option>{% for s in subjects %}<option>{{ s }}</option>{% endfor %}</select></div>
+    <div id="predOut" style="margin-top:12px"></div>
+</section>
+
+<!-- Chat -->
+<section class="panel tab-pane ai-panel" id="tab-chat">
+    <h3>💬 Your study tutor</h3>
+    <p class="ai-section-hint">Ask for a simple explanation, an example, a step-by-step solution or a quick recap.</p>
+    <div class="ai-prompt-row"><button type="button" class="ai-prompt" data-prompt="Explain this topic in simple words with an example.">Explain simply</button><button type="button" class="ai-prompt" data-prompt="Give me a step-by-step explanation of this topic.">Step by step</button><button type="button" class="ai-prompt" data-prompt="Ask me 3 quick questions to check my understanding.">Check my understanding</button></div>
+    <div class="chat-box" id="chatBox" aria-live="polite"><div class="msg bot">Hey! 👋 I'm your study tutor. Ask me about a topic, or use one of the prompts above. I'll look for relevant material in your saved notes first.</div></div>
+    <div class="chat-input"><input id="chatIn" placeholder="Ask a question about your studies…" maxlength="1000"><button class="btn-grad" id="chatBtn">Send ↗</button></div>
+    <p class="ai-chat-footnote">Tip: mention the subject or topic so I can give a more focused explanation.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    function $(id) { return document.getElementById(id); }
+    function busy(btn, on, label) { btn.disabled = on; if (on) { btn.dataset.l = btn.textContent; btn.textContent = "Working…"; } else { btn.textContent = btn.dataset.l || label; } }
+    function modeBadge(m) { return '<span class="mode-badge ' + m + '">' + "Free local" + '</span>'; }
+
+    document.querySelectorAll("#tabs .tab-btn").forEach(function (b) {
+        b.addEventListener("click", function () {
+            document.querySelectorAll("#tabs .tab-btn").forEach(function (x) { x.classList.remove("active"); });
+            document.querySelectorAll(".tab-pane").forEach(function (x) { x.classList.remove("active"); });
+            b.classList.add("active"); $("tab-" + b.dataset.tab).classList.add("active");
+            if (b.dataset.tab === "predict" && !$("predOut").dataset.loaded) loadPredict();
+        });
+    });
+
+    $("sumBtn").addEventListener("click", function () {
+        var btn = this; busy(btn, true);
+        SSH.post("{% url 'hub:ai_summary' %}", { note_id: $("sumNote").value, text: $("sumText").value }).then(function (r) {
+            busy(btn, false);
+            var out = $("sumOut"); out.style.display = "block";
+            if (!r._ok) { out.textContent = r.error || "Something went wrong."; return; }
+            out.innerHTML = modeBadge(r.mode) + "<br><br>"; out.appendChild(document.createTextNode(r.text));
+        });
+    });
+
+    $("quizBtn").addEventListener("click", function () {
+        var btn = this; busy(btn, true);
+        SSH.post("{% url 'hub:ai_quiz' %}", { note_id: $("quizNote").value, text: $("quizText").value, n: parseInt($("quizN").value, 10) }).then(function (r) {
+            busy(btn, false);
+            var out = $("quizOut"); out.style.display = "block"; out.innerHTML = "";
+            if (!r._ok) { out.innerHTML = '<div class="ai-out"></div>'; out.firstChild.textContent = r.error || "Something went wrong."; return; }
+            var score = 0, answered = 0, total = r.questions.length;
+            var head = document.createElement("div"); head.className = "quiz-q"; head.innerHTML = modeBadge(r.mode) + " &nbsp; <span id='qScore'>Score: 0 / " + total + "</span>"; out.appendChild(head);
+            r.questions.forEach(function (q, qi) {
+                var wrap = document.createElement("div");
+                var t = document.createElement("div"); t.className = "quiz-q"; t.textContent = (qi + 1) + ". " + q.q; wrap.appendChild(t);
+                var exp = document.createElement("div"); exp.className = "quiz-exp"; exp.style.display = "none";
+                q.options.forEach(function (opt, oi) {
+                    var b = document.createElement("button"); b.className = "quiz-opt"; b.textContent = opt;
+                    b.addEventListener("click", function () {
+                        wrap.querySelectorAll(".quiz-opt").forEach(function (x, xi) { x.disabled = true; if (xi === q.answer) x.classList.add("right"); });
+                        answered++;
+                        if (oi === q.answer) { score++; } else { b.classList.add("wrong"); }
+                        exp.style.display = "block"; exp.textContent = "💡 " + (q.explain || "");
+                        $("qScore").textContent = "Score: " + score + " / " + total;
+                        if (answered === total) { SSH.toast("Quiz finished: " + score + " / " + total + (score === total ? " 🎉 Perfect!" : ""), "success"); }
+                    });
+                    wrap.appendChild(b);
+                });
+                wrap.appendChild(exp); out.appendChild(wrap);
+            });
+        });
+    });
+
+    function loadPredict() {
+        $("predOut").dataset.loaded = "1";
+        fetch("{% url 'hub:ai_predict' %}?subject=" + encodeURIComponent($("predSubject").value), { credentials: "same-origin" })
+        .then(function (r) { return r.json(); }).then(function (j) {
+            var out = $("predOut"); out.innerHTML = "";
+            if (!j.rows.length) { out.innerHTML = '<p class="text-muted">No PYQ data yet. Add questions in the PYQ section first.</p>'; return; }
+            j.rows.forEach(function (r) {
+                var row = document.createElement("div"); row.className = "predict-row";
+                var left = document.createElement("div");
+                var t = document.createElement("b"); t.textContent = r.subject + " — " + r.topic;
+                var s = document.createElement("small"); s.className = "text-muted"; s.style.display = "block"; s.textContent = r.reason + " (years: " + r.years.join(", ") + ")";
+                left.appendChild(t); left.appendChild(s);
+                var right = document.createElement("div");
+                right.innerHTML = '<div style="text-align:right;font-weight:800">' + r.priority + '%</div><div class="progress-track" style="height:10px!important"><div class="progress-fill" style="width:' + r.priority + '%"></div></div>';
+                row.appendChild(left); row.appendChild(right); out.appendChild(row);
+            });
+        });
+    }
+    $("predSubject").addEventListener("change", loadPredict);
+
+    function addMsg(text, cls) {
+        var m = document.createElement("div"); m.className = "msg " + cls; m.textContent = text;
+        $("chatBox").appendChild(m); $("chatBox").scrollTop = $("chatBox").scrollHeight; return m;
+    }
+    function send() {
+        var q = $("chatIn").value.trim(); if (!q) return;
+        $("chatIn").value = ""; addMsg(q, "user"); var wait = addMsg("Thinking…", "bot");
+        SSH.post("{% url 'hub:ai_chat' %}", { question: q }).then(function (r) {
+            wait.textContent = r._ok ? r.answer + (r.sources && r.sources.length ? "\n\n📎 Sources: " + r.sources.join(", ") : "") : (r.error || "Something went wrong.");
+            $("chatBox").scrollTop = $("chatBox").scrollHeight;
+        });
+    }
+    $("chatBtn").addEventListener("click", send);
+    $("chatIn").addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+    document.querySelectorAll(".ai-prompt").forEach(function (button) {
+        button.addEventListener("click", function () { $("chatIn").value = button.dataset.prompt; $("chatIn").focus(); });
+    });
+})();
+</script>
+{% endblock %}

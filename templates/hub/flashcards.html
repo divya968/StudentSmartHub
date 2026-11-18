@@ -1,0 +1,56 @@
+{% extends "hub/base.html" %}
+{% block title %}Flashcards{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>🃏 Flashcards</h1><p>{{ cards|length }} card{{ cards|length|pluralize }} · {{ known }} mastered</p></div>
+    <div class="head-actions">
+        <a class="btn-grad" href="{% url 'hub:flashcard_study' %}{% if selected %}?subject={{ selected|urlencode }}{% endif %}">▶ Study mode</a>
+        <a class="btn-soft" href="{% url 'hub:flashcard_study' %}?unknown=1{% if selected %}&subject={{ selected|urlencode }}{% endif %}">Only not-yet-known</a>
+    </div>
+</div>
+
+{% if subjects %}<div class="chips">
+    <a class="chip {% if not selected %}active{% endif %}" href="{% url 'hub:flashcards' %}">All</a>
+    {% for s in subjects %}<a class="chip {% if s == selected %}active{% endif %}" href="?subject={{ s|urlencode }}">{{ s }}</a>{% endfor %}
+</div>{% endif %}
+
+<div class="g-2-1">
+    <div>
+        <div class="fc-grid">
+            {% for c in cards %}
+            <article class="fc {% if c.known %}known{% endif %}">
+                <form method="post" action="{% url 'hub:flashcard_delete' c.pk %}" class="del inline">{% csrf_token %}<button class="x-btn" title="Delete">✕</button></form>
+                {% if c.subject %}<span class="tag">{{ c.subject }}</span>{% endif %}
+                <div class="q">{{ c.question }}</div>
+                <div class="a">{{ c.answer }}</div>
+                {% if c.known %}<small style="color:var(--green);font-weight:800">✔ Mastered</small>{% endif %}
+            </article>
+            {% empty %}<div class="panel" style="grid-column:1/-1"><p class="text-muted" style="margin:0">No flashcards yet. Add one, or generate them from a note →</p></div>{% endfor %}
+        </div>
+    </div>
+    <div>
+        <section class="panel">
+            <h3>✨ Generate from a note</h3>
+            {% if notes %}
+            <form method="post" id="genForm" class="form-stack">{% csrf_token %}
+                <p><select id="noteSel">{% for n in notes %}<option value="{{ n.pk }}">{{ n.title }} ({{ n.subject }})</option>{% endfor %}</select></p>
+                <button class="btn-grad" type="submit">Create flashcards</button>
+            </form>
+            <small class="text-muted">Free local generation: “Term: definition” lines become cards; otherwise fill-in-the-blank cards are made. No API key or subscription needed.</small>
+            {% else %}<p class="text-muted" style="margin:0">Write a note first, then come back.</p>{% endif %}
+        </section>
+        <section class="panel">
+            <h3>➕ Add a card</h3>
+            <form method="post" class="form-stack">{% csrf_token %}{{ form.as_p }}<button class="btn-soft" type="submit">Add card</button></form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+var gf = document.getElementById("genForm");
+if (gf) gf.addEventListener("submit", function () {
+    gf.action = "{% url 'hub:flashcards_from_note' 0 %}".replace("/0/", "/" + document.getElementById("noteSel").value + "/");
+});
+</script>
+{% endblock %}

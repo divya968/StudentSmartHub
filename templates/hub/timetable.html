@@ -1,0 +1,29 @@
+{% extends "hub/base.html" %}
+{% block title %}Timetable{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>🕒 Weekly Timetable</h1><p>Plan classes, self-study blocks and breaks for the whole week.</p></div>
+</div>
+<section class="panel">
+    <div class="tt">
+        {% for col in columns %}
+        <div class="tt-col {% if col.today %}today{% endif %}">
+            <h4>{{ col.label }} {% if col.today %}<span class="pill medium">TODAY</span>{% endif %}</h4>
+            {% for s in col.slots %}
+            <div class="slot {{ s.kind }}">
+                <form method="post" action="{% url 'hub:slot_delete' s.pk %}">{% csrf_token %}<button title="Remove">✕</button></form>
+                <b>{{ s.title }}</b><small>{{ s.start_time|time:"H:i" }} – {{ s.end_time|time:"H:i" }}</small>
+            </div>
+            {% empty %}<small class="text-muted">Free day ✨</small>{% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+<section class="panel" style="max-width:640px">
+    <h3>➕ Add a slot</h3>
+    <form method="post" class="form-stack">{% csrf_token %}{{ form.non_field_errors }}
+        {{ form.as_p }}
+        <button class="btn-grad" type="submit">Add to timetable</button>
+    </form>
+</section>
+{% endblock %}

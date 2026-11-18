@@ -1,0 +1,27 @@
+{% extends "hub/base.html" %}
+{% block title %}Exams{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>🎓 Exam Countdown</h1><p>Know exactly how many days are left for each exam.</p></div>
+    <div class="head-actions"><a class="btn-soft" href="{% url 'hub:export' 'exams' 'xlsx' %}">⬇ Excel</a><a class="btn-soft" href="{% url 'hub:export' 'exams' 'pdf' %}">⬇ PDF</a></div>
+</div>
+<div class="g-2-1">
+    <div>
+        {% for e in upcoming %}
+        <article class="panel exam-card">
+            <div class="countdown {% if e.days_left <= 3 %}soon{% elif e.days_left <= 10 %}mid{% endif %}"><b>{{ e.days_left }}</b><small>{% if e.days_left == 0 %}TODAY!{% else %}DAY{{ e.days_left|pluralize:",S" }} LEFT{% endif %}</small></div>
+            <div class="info"><b>{{ e.name }}</b><small class="text-muted">{{ e.subject|default:"—" }} · {{ e.exam_date|date:"l, d M Y" }}</small></div>
+            <form method="post" action="{% url 'hub:exam_delete' e.pk %}" class="inline">{% csrf_token %}<button class="btn-danger-soft btn-sm" onclick="return confirm('Remove this exam?')">Delete</button></form>
+        </article>
+        {% empty %}
+        <div class="panel"><p class="text-muted" style="margin:0">No upcoming exams. Add your first one →</p></div>
+        {% endfor %}
+        {% if past %}<h3 style="margin:26px 0 12px">Past exams</h3>
+            {% for e in past %}<div class="panel" style="padding:14px 20px;opacity:.7"><b>{{ e.name }}</b> <small class="text-muted">· {{ e.exam_date|date:"d M Y" }}</small></div>{% endfor %}{% endif %}
+    </div>
+    <section class="panel">
+        <h3>➕ Add exam</h3>
+        <form method="post" class="form-stack">{% csrf_token %}{{ form.as_p }}<button class="btn-grad" type="submit">Start countdown</button></form>
+    </section>
+</div>
+{% endblock %}

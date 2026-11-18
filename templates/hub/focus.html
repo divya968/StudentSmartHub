@@ -1,0 +1,155 @@
+{% extends "hub/base.html" %}
+{% block title %}Focus Timer{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>⏱️ Focus Timer</h1><p>Pomodoro sessions are logged automatically into today's goal, streak and XP.</p></div>
+</div>
+
+<div class="g-2-1">
+    <section class="panel">
+        <div class="mode-tabs" id="modeTabs">
+            <button class="tab-btn active" data-min="25" data-kind="focus">🎯 Focus 25</button>
+            <button class="tab-btn" data-min="50" data-kind="focus">🔥 Deep 50</button>
+            <button class="tab-btn" data-min="5" data-kind="break">☕ Short break 5</button>
+            <button class="tab-btn" data-min="15" data-kind="break">🛋️ Long break 15</button>
+        </div>
+
+        <div class="timer-wrap">
+            <div class="ring">
+                <svg viewBox="0 0 120 120">
+                    <defs><linearGradient id="timerGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#4f46e5"/><stop offset="55%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#ec4899"/>
+                    </linearGradient></defs>
+                    <circle class="track" cx="60" cy="60" r="54" fill="none" stroke-width="8"/>
+                    <circle class="prog" id="prog" cx="60" cy="60" r="54" fill="none" stroke-width="8" stroke-dasharray="339.292" stroke-dashoffset="0"/>
+                </svg>
+                <div class="time"><b id="clock">25:00</b><span id="modeLabel">FOCUS</span></div>
+            </div>
+        </div>
+
+        <div class="field" style="max-width:360px;margin:18px auto 0">
+            <input id="subject" list="subjectList" placeholder="What are you studying? (optional)" maxlength="100">
+            <datalist id="subjectList">{% for s in subjects %}<option value="{{ s }}">{% endfor %}</datalist>
+        </div>
+
+        <div class="timer-controls">
+            <button class="btn-grad" id="startBtn">▶ Start</button>
+            <button class="btn-soft" id="resetBtn">↺ Reset</button>
+            <button class="btn-ghost" id="finishBtn" title="Log the time done so far">✔ Finish early</button>
+        </div>
+        <p class="text-muted" style="text-align:center;margin-top:14px;font-size:13px">Tip: keep this tab open. When a focus block ends you'll hear a chime and earn XP.</p>
+    </section>
+
+    <div>
+        <section class="panel">
+            <h3>📊 Today</h3>
+            <div class="g2" style="gap:12px">
+                <div><small class="text-muted">FOCUSED</small><h2 style="margin:4px 0" id="todayMin">{{ minutes_today }}</h2><small class="text-muted">minutes</small></div>
+                <div><small class="text-muted">SESSIONS</small><h2 style="margin:4px 0" id="todayCount">{{ count_today }}</h2><small class="text-muted">completed</small></div>
+            </div>
+            <div class="progress-track" style="margin-top:16px"><div class="progress-fill" id="goalBar" style="width:{{ goal.pct }}%"></div></div>
+            <small class="text-muted" id="goalText">{{ goal.hours }} / {{ goal.target }} h of today's goal</small>
+        </section>
+        <section class="panel">
+            <h3>🕘 Recent sessions</h3>
+            <ul class="mini-list" id="sessionList">
+                {% for s in sessions %}<li><span>{{ s.subject|default:"General" }}</span><b>{{ s.minutes }} min</b></li>
+                {% empty %}<li class="text-muted" id="noSessions">No sessions yet today.</li>{% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var CIRC = 339.292;
+    var total = 25 * 60, left = total, kind = "focus", timer = null, startedAt = 0, elapsedBase = 0;
+    var clock = document.getElementById("clock"), prog = document.getElementById("prog"),
+        label = document.getElementById("modeLabel"), startBtn = document.getElementById("startBtn"),
+        todayMin = document.getElementById("todayMin"), todayCount = document.getElementById("todayCount");
+    var targetHours = {{ goal.target }};
+
+    function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0"); }
+    function paint() {
+        clock.textContent = fmt(left);
+        prog.style.strokeDashoffset = CIRC * (1 - left / total);
+        document.title = (timer ? fmt(left) + " · " : "") + "Focus Timer | Student Smart Hub";
+    }
+    function chime() {
+        try {
+            var ac = new (window.AudioContext || window.webkitAudioContext)();
+            [660, 880, 1100].forEach(function (f, i) {
+                var o = ac.createOscillator(), g = ac.createGain();
+                o.frequency.value = f; o.connect(g); g.connect(ac.destination);
+                g.gain.setValueAtTime(.2, ac.currentTime + i * .22);
+                g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + i * .22 + .5);
+                o.start(ac.currentTime + i * .22); o.stop(ac.currentTime + i * .22 + .5);
+            });
+        } catch (e) {}
+    }
+    function setMode(min, k) {
+        stop(); kind = k; total = min * 60; left = total; elapsedBase = 0;
+        label.textContent = k === "focus" ? "FOCUS" : "BREAK"; paint();
+        startBtn.textContent = "▶ Start";
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function elapsedSeconds() { return elapsedBase + (timer ? Math.round((Date.now() - startedAt) / 1000) : 0); }
+
+    function log(minutes) {
+        if (kind !== "focus" || minutes < 1) return Promise.resolve();
+        var subject = document.getElementById("subject").value.trim();
+        return SSH.post("{% url 'hub:focus_log' %}", { minutes: minutes, subject: subject }).then(function (r) {
+            if (!r._ok) { SSH.toast(r.error || "Could not save session", "error"); return; }
+            todayMin.textContent = (parseInt(todayMin.textContent, 10) || 0) + minutes;
+            todayCount.textContent = (parseInt(todayCount.textContent, 10) || 0) + 1;
+            var hrs = r.studied_hours, pct = Math.min(Math.round(hrs * 100 / targetHours), 100);
+            document.getElementById("goalBar").style.width = pct + "%";
+            document.getElementById("goalText").textContent = hrs.toFixed(2) + " / " + targetHours + " h of today's goal";
+            var li = document.createElement("li");
+            li.innerHTML = "<span></span><b>" + minutes + " min</b>";
+            li.firstChild.textContent = subject || "General";
+            var list = document.getElementById("sessionList"), empty = document.getElementById("noSessions");
+            if (empty) empty.remove();
+            list.insertBefore(li, list.firstChild);
+            SSH.toast("Focus session saved! 🎉 +" + r.xp_gained + " XP" + (r.level_up ? " — LEVEL UP! Level " + r.level : ""), "success");
+            if (r.level_up) SSH.confetti();
+        });
+    }
+
+    function tick() {
+        left = Math.max(total - elapsedSeconds(), 0); paint();
+        if (left <= 0) {
+            stop(); chime();
+            var mins = Math.round(total / 60);
+            if (kind === "focus") log(mins); else SSH.toast("Break over — ready to focus? 💪", "info");
+            if ("Notification" in window && Notification.permission === "granted") new Notification("Student Smart Hub", { body: kind === "focus" ? "Focus session complete! Take a break." : "Break is over!" });
+            elapsedBase = 0; left = total; startBtn.textContent = "▶ Start"; paint();
+        }
+    }
+
+    startBtn.addEventListener("click", function () {
+        if (timer) { elapsedBase = elapsedSeconds(); stop(); startBtn.textContent = "▶ Resume"; paint(); return; }
+        if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+        startedAt = Date.now(); startBtn.textContent = "⏸ Pause";
+        timer = setInterval(tick, 500); tick();
+    });
+    document.getElementById("resetBtn").addEventListener("click", function () { elapsedBase = 0; stop(); left = total; startBtn.textContent = "▶ Start"; paint(); });
+    document.getElementById("finishBtn").addEventListener("click", function () {
+        var mins = Math.floor(elapsedSeconds() / 60);
+        if (kind !== "focus") { SSH.toast("Only focus sessions are logged.", "info"); return; }
+        if (mins < 1) { SSH.toast("Study for at least 1 minute to log a session.", "info"); return; }
+        stop(); elapsedBase = 0; left = total; startBtn.textContent = "▶ Start"; paint(); log(mins);
+    });
+    document.querySelectorAll("#modeTabs .tab-btn").forEach(function (b) {
+        b.addEventListener("click", function () {
+            document.querySelectorAll("#modeTabs .tab-btn").forEach(function (x) { x.classList.remove("active"); });
+            b.classList.add("active"); setMode(parseInt(b.dataset.min, 10), b.dataset.kind);
+        });
+    });
+    window.addEventListener("beforeunload", function (e) { if (timer && kind === "focus") { e.preventDefault(); e.returnValue = ""; } });
+    paint();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "hub/base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>📅 Calendar</h1><p>Task deadlines and exams at a glance.</p></div>
+    <div class="head-actions">
+        <a class="btn-soft" href="{{ prev }}">← Prev</a>
+        <a class="btn-ghost" href="{% url 'hub:calendar' %}">Today</a>
+        <a class="btn-soft" href="{{ next }}">Next →</a>
+    </div>
+</div>
+<section class="panel">
+    <h2 style="margin:0 0 16px">{{ title }}</h2>
+    <div class="cal">
+        {% for w in weekdays %}<div class="cal-h">{{ w|upper }}</div>{% endfor %}
+        {% for week in grid %}{% for d in week %}
+            <div class="cal-cell {% if not d.in_month %}off{% endif %} {% if d.today %}today{% endif %}">
+                <div class="d">{{ d.date.day }}</div>
+                {% for it in d.items %}<span class="cal-chip {{ it.cls }}" title="{{ it.label }}">{{ it.label }}</span>{% endfor %}
+                {% if d.more %}<span class="cal-more">+{{ d.more }} more</span>{% endif %}
+            </div>
+        {% endfor %}{% endfor %}
+    </div>
+    <div class="heat-legend" style="flex-wrap:wrap;gap:12px;margin-top:18px">
+        <span class="cal-chip high" style="display:inline-block">High</span><span class="cal-chip medium" style="display:inline-block">Medium</span>
+        <span class="cal-chip low" style="display:inline-block">Low</span><span class="cal-chip done" style="display:inline-block">Done</span>
+        <span class="cal-chip exam" style="display:inline-block">🎓 Exam</span>
+    </div>
+</section>
+{% endblock %}

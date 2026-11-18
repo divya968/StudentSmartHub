@@ -1,0 +1,128 @@
+.ai-eyebrow { color:#7c3aed; font-size:10px; letter-spacing:2px; font-weight:900; margin-bottom:7px; }
+.ai-hero h1 { margin:0 0 7px; color:#201b55; font-size:clamp(25px,3vw,34px); letter-spacing:-1px; }
+.ai-hero p { margin:0; color:#5e6080; max-width:650px; line-height:1.6; }
+.ai-status { display:inline-flex; align-items:center; gap:8px; margin-top:14px; padding:7px 11px; border:1px solid rgba(124,58,237,.15); border-radius:999px; background:rgba(255,255,255,.72); color:#4b4773; font-size:12px; font-weight:800; }
+.ai-status-dot { width:8px; height:8px; border-radius:50%; background:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,.13); }
+.ai-status-dot.is-live { background:#10b981; box-shadow:0 0 0 4px rgba(16,185,129,.13); }
+.ai-hero-art { flex:0 0 112px; width:112px; height:112px; display:grid; place-items:center; position:relative; border-radius:32px; color:white; background:linear-gradient(145deg,#6745ed,#b33fca 70%,#ed56a9); box-shadow:0 16px 30px rgba(124,58,237,.28); transform:rotate(5deg); }
+.ai-hero-art strong { font-size:35px; letter-spacing:-2px; text-shadow:0 3px 10px rgba(0,0,0,.18); }
+.ai-hero-art span,.ai-hero-art i { position:absolute; color:#ffe6a8; font-style:normal; font-size:24px; }
+.ai-hero-art span { top:10px; left:14px; }.ai-hero-art i { right:12px; bottom:8px; }
+.ai-feature-strip { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin:0 0 18px; }
+.ai-feature-strip > div { display:flex; flex-direction:column; gap:4px; padding:12px 14px; border:1px solid var(--border); border-radius:15px; background:rgba(255,255,255,.78); }
+.ai-feature-strip b { font-size:12px; color:var(--text); }.ai-feature-strip span { font-size:11px; color:var(--muted); }
+.ai-tabs { gap:9px; flex-wrap:wrap; margin-bottom:14px; }.ai-tabs .tab-btn { border-radius:13px; padding:11px 17px; }
+.ai-panel { border-radius:21px; padding:clamp(18px,3vw,27px); }
+.ai-panel h3 { margin-top:0; margin-bottom:5px; }.ai-section-hint { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.6; }
+.ai-panel textarea { min-height:125px; line-height:1.55; resize:vertical; }
+.ai-result { border-radius:17px; padding:20px; line-height:1.8; overflow-wrap:anywhere; }
+.ai-prompt-row { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 13px; }
+.ai-prompt { border:1px solid var(--border); border-radius:999px; padding:7px 12px; color:var(--violet); background:var(--surface); font:700 12px var(--font); cursor:pointer; transition:.2s; }
+.ai-prompt:hover { border-color:var(--violet); background:rgba(124,58,237,.07); transform:translateY(-1px); }
+.ai-chat-footnote { margin:8px 2px 0; color:var(--muted); font-size:11px; }
+.chat-box { min-height:300px; max-height:480px; height:clamp(300px,45vh,440px); }
+.chat-input input { min-width:0; }.chat-input button { flex:0 0 auto; }
+@media(max-width:760px) { .ai-hero { padding:21px; }.ai-hero-art { flex-basis:78px; width:78px; height:78px; border-radius:24px; }.ai-hero-art strong { font-size:27px; }.ai-feature-strip { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) { .ai-hero-art { display:none; }.ai-feature-strip > div { padding:10px; }.ai-feature-strip span { font-size:10px; }.ai-tabs .tab-btn { flex:1 1 calc(50% - 8px); }.chat-input { align-items:stretch; }.chat-input button { padding-left:14px; padding-right:14px; } }
+
+
+/* ---------- Flashcard study: hard containment override ---------- */
+/* Keep the 3D faces inside a fixed stage; only the answer/question scrolls. */
+#stage.flash-study .study-stage {
+    width: min(100%, 680px);
+    height: clamp(340px, 52vh, 440px);
+    min-height: 340px;
+    margin: 18px auto;
+    perspective: 1200px;
+    -webkit-perspective: 1200px;
+}
+
+#stage.flash-study .study-stage .flip {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-content: stretch;
+    justify-items: stretch;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    box-sizing: border-box;
+    padding: clamp(18px, 3vw, 30px);
+    overflow: hidden;
+    border-radius: 26px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face .flash-face-label {
+    align-self: start;
+    justify-self: center;
+    margin: 0;
+}
+
+#stage.flash-study .study-stage .flip > .flash-face .flash-face-text {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 4px 8px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    font-size: clamp(16px, 1.45vw, 19px);
+    line-height: 1.45;
+    text-align: center;
+    align-self: stretch;
+    justify-self: stretch;
+}
+
+#stage.flash-study .study-stage .flip > .front {
+    transform: rotateY(0deg);
+}
+
+#stage.flash-study .study-stage .flip > .back {
+    transform: rotateY(180deg);
+}
+
+#stage.flash-study .study-stage .flip.flipped {
+    transform: rotateY(180deg);
+}
+
+@media (max-width: 640px) {
+    #stage.flash-study .study-stage {
+        height: clamp(320px, 55vh, 400px);
+        min-height: 320px;
+        margin: 10px auto;
+    }
+
+    #stage.flash-study .study-stage .flip > .flash-face {
+        padding: 18px 16px;
+        border-radius: 20px;
+    }
+
+    #stage.flash-study .study-stage .flip > .flash-face .flash-face-text {
+        font-size: 15px;
+        line-height: 1.4;

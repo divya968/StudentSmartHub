@@ -1,0 +1,74 @@
+{% extends "hub/base.html" %}
+{% block title %}Syllabus{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>📖 Syllabus Tracker</h1><p>Tick off chapters as you finish them. Each chapter gives +8 XP.</p></div>
+</div>
+
+<section class="panel">
+    <div style="display:flex;justify-content:space-between;font-weight:800"><span>Overall progress</span><span id="overallPct">{{ overall }}%</span></div>
+    <div class="progress-track" style="margin-top:10px;height:18px!important"><div class="progress-fill" id="overallBar" style="width:{{ overall }}%"></div></div>
+    <small class="text-muted">{{ done }} of {{ total }} chapters completed</small>
+</section>
+
+<div class="g-2-1">
+    <div>
+        {% for s in subjects %}
+        <section class="panel" data-subject="{{ s.pk }}">
+            <div class="subject-head">
+                <h3 style="margin:0">{{ s.name }}</h3>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <b class="subj-pct">{{ s.progress }}%</b>
+                    <form class="inline" method="post" action="{% url 'hub:syllabus_delete' s.pk %}">{% csrf_token %}<button class="x-btn" title="Delete subject" onclick="return confirm('Delete {{ s.name|escapejs }} and its chapters?')">🗑</button></form>
+                </div>
+            </div>
+            <div class="progress-track" style="margin-bottom:10px"><div class="progress-fill subj-bar" style="width:{{ s.progress }}%"></div></div>
+            {% for c in s.chapters.all %}
+                <div class="chapter {% if c.done %}done{% endif %}" data-id="{{ c.pk }}">
+                    <input type="checkbox" {% if c.done %}checked{% endif %} data-toggle="{% url 'hub:chapter_toggle' c.pk %}" aria-label="Mark {{ c.title }} done">
+                    <span>{{ c.title }}</span>
+                    <form class="inline" method="post" action="{% url 'hub:chapter_delete' c.pk %}">{% csrf_token %}<button class="x-btn" title="Remove">✕</button></form>
+                </div>
+            {% empty %}<p class="text-muted">No chapters yet.</p>{% endfor %}
+            <form method="post" action="{% url 'hub:chapter_add' s.pk %}" style="margin-top:14px;display:flex;gap:10px">
+                {% csrf_token %}<input name="chapters" placeholder="Add a chapter…" required><button class="btn-soft btn-sm" type="submit">Add</button>
+            </form>
+        </section>
+        {% empty %}
+        <div class="panel"><p class="text-muted" style="margin:0">No subjects yet — add one on the right 👉</p></div>
+        {% endfor %}
+    </div>
+    <section class="panel">
+        <h3>➕ New subject</h3>
+        <form method="post" action="{% url 'hub:syllabus_add' %}" class="form-stack">{% csrf_token %}
+            <p><label>Subject name</label><input name="name" placeholder="e.g. Operating Systems" required maxlength="100"></p>
+            <p><label>Chapters (one per line)</label><textarea name="chapters" rows="6" placeholder="Processes&#10;Scheduling&#10;Memory Management"></textarea></p>
+            <button class="btn-grad" type="submit">Add subject</button>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll("input[data-toggle]").forEach(function (box) {
+    box.addEventListener("change", function () {
+        fetch(box.dataset.toggle, { method: "POST", credentials: "same-origin",
+            headers: { "X-CSRFToken": SSH.csrf(), "X-Requested-With": "fetch" } })
+        .then(function (r) { return r.json(); }).then(function (j) {
+            var row = box.closest(".chapter"); row.classList.toggle("done", j.done);
+            var sec = box.closest("section");
+            sec.querySelector(".subj-pct").textContent = j.progress + "%";
+            sec.querySelector(".subj-bar").style.width = j.progress + "%";
+            var all = document.querySelectorAll("input[data-toggle]"), d = 0;
+            all.forEach(function (b) { if (b.checked) d++; });
+            var pct = all.length ? Math.round(d * 100 / all.length) : 0;
+            document.getElementById("overallPct").textContent = pct + "%";
+            document.getElementById("overallBar").style.width = pct + "%";
+            if (j.done) SSH.toast("Chapter completed! +8 XP 🎉", "success");
+            if (j.done && j.progress === 100) SSH.confetti();
+        }).catch(function () { box.checked = !box.checked; SSH.toast("Could not save. Try again.", "error"); });
+    });
+});
+</script>
+{% endblock %}

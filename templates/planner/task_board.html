@@ -1,0 +1,47 @@
+{% extends "hub/base.html" %}
+{% block title %}Task Board{% endblock %}
+{% block content %}
+<div class="page-head">
+    <div><h1>🧩 Kanban Board</h1><p>Drag cards between columns. Finishing a task earns +10 XP.</p></div>
+    <div class="head-actions"><a class="btn-grad" href="{% url 'planner:add' %}">+ New task</a><a class="btn-ghost" href="{% url 'planner:list' %}">List view</a></div>
+</div>
+<div class="kanban" id="board">
+    {% for col in columns %}
+    <section class="kcol" data-col="{{ col.key }}">
+        <h3>{{ col.title }} <span class="pill low count">{{ col.tasks|length }}</span></h3>
+        {% for t in col.tasks %}
+        <article class="kcard {% if not t.completed and t.due_date < today %}overdue{% endif %}" draggable="true" data-id="{{ t.pk }}">
+            <b>{{ t.title }}</b>
+            <div class="meta"><span class="pill {{ t.priority|lower }}">{{ t.priority }}</span><span class="text-muted">{{ t.subject }}</span><span class="text-muted">📅 {{ t.due_date|date:"d M" }}</span></div>
+        </article>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+    var dragged = null;
+    function recount() { document.querySelectorAll(".kcol").forEach(function (c) { c.querySelector(".count").textContent = c.querySelectorAll(".kcard").length; }); }
+    document.querySelectorAll(".kcard").forEach(function (card) {
+        card.addEventListener("dragstart", function (e) { dragged = card; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", card.dataset.id); });
+        card.addEventListener("dragend", function () { card.classList.remove("dragging"); document.querySelectorAll(".kcol").forEach(function (c) { c.classList.remove("over"); }); });
+    });
+    document.querySelectorAll(".kcol").forEach(function (col) {
+        col.addEventListener("dragover", function (e) { e.preventDefault(); col.classList.add("over"); });
+        col.addEventListener("dragleave", function (e) { if (!col.contains(e.relatedTarget)) col.classList.remove("over"); });
+        col.addEventListener("drop", function (e) {
+            e.preventDefault(); col.classList.remove("over");
+            if (!dragged || dragged.parentNode === col) return;
+            var card = dragged, from = card.parentNode;
+            col.appendChild(card); recount();
+            SSH.post("{% url 'planner:move' 0 %}".replace("/0/", "/" + card.dataset.id + "/"), { column: col.dataset.col }).then(function (r) {
+                if (!r._ok) { from.appendChild(card); recount(); SSH.toast("Could not move the task.", "error"); return; }
+                if (r.just_completed) SSH.toast("Task completed! 🎉 +10 XP", "success");
+            });
+        });
+    });
+})();
+</script>
+{% endblock %}

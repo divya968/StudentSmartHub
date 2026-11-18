@@ -1,0 +1,178 @@
+{% extends "hub/base.html" %}
+{% load static hub_extras %}
+{% block title %}Dashboard{% endblock %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>{% endblock %}
+
+{% block content %}
+<section class="hero" style="margin-top:0">
+    <div>
+        <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">✨ STUDENT WORKSPACE</span>
+        <h1><span id="greeting">Hello</span>, {{ request.user.first_name|default:request.user.username }}! 👋</h1>
+        <p>{% if profile %}{{ profile.course }} · {{ profile.get_semester_display }}{% else %}Learn better. Plan smarter. Achieve more.{% endif %}</p>
+        <p class="quote" style="color:rgba(255,255,255,.85)!important;margin-top:10px">“{{ quote.0 }}” — {{ quote.1 }}</p>
+    </div>
+    <div class="emoji">🚀</div>
+</section>
+
+<div class="g4" style="margin-bottom:22px">
+    <article class="panel kpi" style="margin:0">
+        <div class="chip-ico" style="background:var(--grad-warm)">🔥</div>
+        <small class="text-muted">CURRENT STREAK</small>
+        <h3>{{ streaks.current_streak }} day{{ streaks.current_streak|pluralize }}</h3>
+    </article>
+    <article class="panel kpi" style="margin:0">
+        <div class="chip-ico" style="background:var(--grad-cool)">📝</div>
+        <small class="text-muted">NOTES</small>
+        <h3 data-count="{{ total_notes }}">{{ total_notes }}</h3>
+    </article>
+    <article class="panel kpi" style="margin:0">
+        <div class="chip-ico" style="background:var(--grad-fresh)">🏆</div>
+        <small class="text-muted">TASKS DONE</small>
+        <h3>{{ completed_tasks }}/{{ total_tasks }}</h3>
+    </article>
+    <article class="panel kpi" style="margin:0">
+        <div class="chip-ico" style="background:var(--grad-sun)">🎖️</div>
+        <small class="text-muted">BADGES</small>
+        <h3>{{ badges_earned }}/10</h3>
+    </article>
+</div>
+
+<div class="g-2-1">
+    <div>
+        <section class="panel">
+            <h3>📈 This Week <small>{{ weekly.total_hours }} h studied in 7 days</small></h3>
+            <div class="chart-box"><canvas id="weekChart"></canvas></div>
+        </section>
+
+        <section class="panel">
+            <h3>🔥 Study Streak Calendar <small>{{ heat.active_days }} active days in the last 6 months</small></h3>
+            <div class="heat-wrap">
+                <div class="heat">
+                    {% for week in heat.weeks %}{% for d in week %}<div class="heat-cell l{{ d.level }}{% if d.future %} future{% endif %}" title="{{ d.tip }}"></div>{% endfor %}{% endfor %}
+                </div>
+            </div>
+            <div class="heat-legend">Less
+                <span class="heat-cell"></span><span class="heat-cell l1"></span><span class="heat-cell l2"></span><span class="heat-cell l3"></span><span class="heat-cell l4"></span> More
+            </div>
+        </section>
+    </div>
+
+    <div>
+        <section class="level-card" style="margin-bottom:22px">
+            <small style="opacity:.85;font-weight:800;letter-spacing:1px">LEVEL {{ level.level }}</small>
+            <h2>{{ level.title }}</h2>
+            <div class="xp-bar"><i style="width:{{ level.pct }}%"></i></div>
+            <p style="margin:10px 0 0;font-size:13px;opacity:.9">{{ level.xp }} XP · {{ level.to_next }} XP to next level</p>
+            <a href="{% url 'hub:achievements' %}" class="btn-soft btn-sm" style="margin-top:14px;background:rgba(255,255,255,.22)!important;color:#fff!important">View badges →</a>
+        </section>
+
+        <section class="panel">
+            <h3>🎯 Today's Goal</h3>
+            <div style="display:flex;justify-content:space-between;font-weight:800"><span>{{ goal.hours }} / {{ goal.target }} h</span><span>{{ goal.pct }}%</span></div>
+            <div class="progress-track" style="margin-top:10px"><div class="progress-fill" style="width:{{ goal.pct }}%"></div></div>
+            <a href="{% url 'hub:focus' %}" class="btn-grad btn-sm" style="margin-top:16px">⏱️ Start focus session</a>
+        </section>
+
+        <section class="panel">
+            <h3>🎓 Exam Countdown</h3>
+            {% for e in exams %}
+                <div class="exam-card" style="padding:0!important;margin-bottom:12px;border:0;box-shadow:none">
+                    <div class="countdown {% if e.days_left <= 3 %}soon{% elif e.days_left <= 10 %}mid{% endif %}" style="min-width:64px"><b>{{ e.days_left }}</b><small>DAYS</small></div>
+                    <div class="info"><b>{{ e.name }}</b><small class="text-muted">{{ e.exam_date|date:"D, d M" }}</small></div>
+                </div>
+            {% empty %}
+                <p class="text-muted" style="margin:0">No exams yet. <a href="{% url 'hub:exams' %}">Add one →</a></p>
+            {% endfor %}
+        </section>
+    </div>
+</div>
+
+<div class="g2">
+    <section class="panel">
+        <h3>📚 Subject Mix</h3>
+        {% if subjects_chart.labels %}
+            <div class="chart-box"><canvas id="subjectChart"></canvas></div>
+        {% else %}<p class="text-muted">Add tasks and notes to see your subject mix.</p>{% endif %}
+    </section>
+
+    <section class="panel">
+        <h3>⏳ Up Next <small><a href="{% url 'planner:board' %}">Open board →</a></small></h3>
+        <ul class="mini-list">
+            {% for t in upcoming %}
+                <li><span><b>{{ t.title }}</b><br><small class="text-muted">{{ t.subject }} · due {{ t.due_date|date:"d M" }}</small></span>
+                    <span class="pill {{ t.priority|lower }}">{{ t.priority }}</span></li>
+            {% empty %}<li class="text-muted">🎉 Nothing pending. Great job!</li>{% endfor %}
+        </ul>
+        <div class="progress-track" style="margin-top:16px"><div class="progress-fill" style="width:{{ progress_percentage }}%"></div></div>
+        <small class="text-muted">{{ progress_percentage }}% of all tasks completed</small>
+    </section>
+</div>
+
+<h2 class="section-title">🧭 Quick Access</h2>
+<div class="module-grid">
+    <a href="{% url 'study_notes:list' %}" class="module-card"><div class="icon">📝</div><span class="go">→</span><h3>My Notes</h3><p>Markdown notes, tags, pin &amp; PDF export.</p></a>
+    <a href="{% url 'hub:focus' %}" class="module-card"><div class="icon">⏱️</div><span class="go">→</span><h3>Focus Timer</h3><p>Pomodoro that fills your daily goal.</p></a>
+    <a href="{% url 'hub:ai' %}" class="module-card"><div class="icon">🤖</div><span class="go">→</span><h3>AI Assistant</h3><p>Summaries, quizzes &amp; exam predictions.</p></a>
+    <a href="{% url 'hub:flashcards' %}" class="module-card"><div class="icon">🃏</div><span class="go">→</span><h3>Flashcards</h3><p>Revise faster with flip cards.</p></a>
+    <a href="{% url 'hub:syllabus' %}" class="module-card"><div class="icon">📖</div><span class="go">→</span><h3>Syllabus Tracker</h3><p>Tick off chapters, watch % grow.</p></a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ weekly|json_script:"weekData" }}
+{{ subjects_chart|json_script:"subjectData" }}
+<script>
+(function () {
+    var h = new Date().getHours();
+    document.getElementById("greeting").textContent = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+
+    if (typeof Chart === "undefined") return;
+    var charts = [];
+    function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+    function build() {
+        charts.forEach(function (c) { c.destroy(); }); charts = [];
+        var text = css("--muted"), grid = css("--border");
+        Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+        Chart.defaults.color = text;
+
+        var w = JSON.parse(document.getElementById("weekData").textContent);
+        var ctx = document.getElementById("weekChart").getContext("2d");
+        var g = ctx.createLinearGradient(0, 0, 0, 260);
+        g.addColorStop(0, "#7c3aed"); g.addColorStop(1, "#ec4899");
+        charts.push(new Chart(ctx, {
+            data: {
+                labels: w.labels,
+                datasets: [
+                    { type: "bar", label: "Hours studied", data: w.hours, backgroundColor: g, borderRadius: 10, yAxisID: "y" },
+                    { type: "line", label: "Tasks done", data: w.tasks, borderColor: "#06b6d4", backgroundColor: "#06b6d4",
+                      tension: .4, borderWidth: 3, pointRadius: 4, yAxisID: "y1" }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: { legend: { position: "bottom", labels: { usePointStyle: true } } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: grid }, title: { display: true, text: "hours" } },
+                    y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false }, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        }));
+
+        var sEl = document.getElementById("subjectChart");
+        if (sEl) {
+            var s = JSON.parse(document.getElementById("subjectData").textContent);
+            charts.push(new Chart(sEl, {
+                type: "doughnut",
+                data: { labels: s.labels, datasets: [{ data: s.values, borderWidth: 0, hoverOffset: 10,
+                    backgroundColor: ["#7c3aed", "#ec4899", "#06b6d4", "#f59e0b", "#10b981", "#4f46e5", "#f97316", "#ef4444"] }] },
+                options: { maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "right", labels: { usePointStyle: true } } } }
+            }));
+        }
+    }
+    build();
+    document.addEventListener("ssh-theme-change", build);
+})();
+</script>
+{% endblock %}

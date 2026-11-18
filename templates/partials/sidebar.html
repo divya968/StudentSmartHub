@@ -1,0 +1,49 @@
+{% load static %}
+<script>document.body.classList.add('has-sidebar');</script>
+<div hidden>{% csrf_token %}</div>
+{% for m in messages %}<div class="ssh-flash" hidden data-level="{{ m.level_tag }}">{{ m }}</div>{% endfor %}
+
+<div class="mobile-bar no-print">
+    <button type="button" id="sideToggle" aria-label="Open menu">☰</button>
+    <b>Student Smart Hub</b>
+</div>
+<div class="side-backdrop" id="sideBackdrop"></div>
+
+<aside class="sidebar no-print" id="sidebar">
+    <a class="side-brand" href="{% url 'dashboard' %}">
+        <span class="brand-icon" style="width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;">S</span>
+        <span class="dark-brand">Student Smart Hub</span>
+    </a>
+
+    <form class="side-search" action="{% url 'hub:search' %}" method="get">
+        <input id="globalSearch" name="q" placeholder="🔍 Search everything…  Ctrl+K" autocomplete="off">
+    </form>
+
+    <div class="side-nav">
+        {% for group in nav_groups %}
+            <div class="side-title">{{ group.title }}</div>
+            {% for item in group.items %}
+                <a class="side-link {% if item.active %}active{% endif %}" href="{{ item.url }}">
+                    <span class="ico">{{ item.icon }}</span>{{ item.label }}
+                </a>
+            {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div class="side-user">
+        <a class="side-user-row" href="{% url 'profile' %}">
+            <span class="avatar">{% if side_user.avatar %}<img src="{{ side_user.avatar }}" alt="">{% else %}{{ side_user.initial }}{% endif %}</span>
+            <span>
+                <b>{{ side_user.name }}</b>
+                <small class="text-muted">Lv {{ side_level.level }} · {{ side_level.title }} · {{ side_level.xp }} XP</small>
+            </span>
+        </a>
+        <div class="xp-bar"><i style="width:{{ side_level.pct }}%"></i></div>
+        <div class="side-actions">
+            <form method="POST" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="logout-btn" type="submit">Log out</button>
+            </form>
+        </div>
+    </div>
+</aside>

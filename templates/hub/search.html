@@ -1,0 +1,13 @@
+{% extends "hub/base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>🔍 Search</h1><p>{% if q %}{{ total }} result{{ total|pluralize }} for “{{ q }}”{% else %}Search notes, tasks, PYQs, flashcards, exams and chapters.{% endif %}</p></div></div>
+<form method="get" style="display:flex;gap:10px;max-width:560px;margin-bottom:10px"><input name="q" value="{{ q }}" placeholder="Type and press Enter…" autofocus><button class="btn-grad" type="submit">Search</button></form>
+{% if q and not total %}<div class="panel"><p class="text-muted" style="margin:0">Nothing found. Try a different keyword.</p></div>{% endif %}
+{% if results.notes %}<div class="result-group"><h3>📝 Notes</h3>{% for n in results.notes %}<a class="result" href="{% url 'study_notes:detail' n.pk %}"><b>{{ n.title }}</b><small class="text-muted">{{ n.subject }}</small></a>{% endfor %}</div>{% endif %}
+{% if results.tasks %}<div class="result-group"><h3>🗓️ Tasks</h3>{% for t in results.tasks %}<a class="result" href="{% url 'planner:edit' t.pk %}"><b>{{ t.title }}</b><small class="text-muted">{{ t.subject }} · due {{ t.due_date|date:"d M" }}</small></a>{% endfor %}</div>{% endif %}
+{% if results.pyqs %}<div class="result-group"><h3>📚 PYQs</h3>{% for p in results.pyqs %}<a class="result" href="{% url 'pyq:list' %}?q={{ q|urlencode }}"><b>{{ p.subject }} – {{ p.topic }}</b><small class="text-muted">{{ p.question|truncatechars:110 }} ({{ p.year }})</small></a>{% endfor %}</div>{% endif %}
+{% if results.cards %}<div class="result-group"><h3>🃏 Flashcards</h3>{% for c in results.cards %}<a class="result" href="{% url 'hub:flashcards' %}"><b>{{ c.question|truncatechars:90 }}</b><small class="text-muted">{{ c.answer|truncatechars:90 }}</small></a>{% endfor %}</div>{% endif %}
+{% if results.exams %}<div class="result-group"><h3>🎓 Exams</h3>{% for e in results.exams %}<a class="result" href="{% url 'hub:exams' %}"><b>{{ e.name }}</b><small class="text-muted">{{ e.exam_date|date:"d M Y" }}</small></a>{% endfor %}</div>{% endif %}
+{% if results.chapters %}<div class="result-group"><h3>📖 Chapters</h3>{% for c in results.chapters %}<a class="result" href="{% url 'hub:syllabus' %}"><b>{{ c.title }}</b><small class="text-muted">{{ c.subject.name }}</small></a>{% endfor %}</div>{% endif %}
+{% endblock %}
